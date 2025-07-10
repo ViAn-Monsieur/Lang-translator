@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chatbot Dịch Ngôn Ngữ</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Chat page specific styles */
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    .chat-page-container {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0;
+      background: var(--bg-light);
+    }
+
+    .chat-container {
+      width: 800px;
+      max-width: 95vw;
+      height: 600px;
+      max-height: 90vh;
+      margin: 0;
+    }
+
+    .chat-body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message {
+      display: flex;
+      margin: var(--spacing-md) 0;
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message.bot {
+      justify-content: flex-start;
+    }
+
+    .message-content {
+      max-width: 80%;
+      padding: var(--spacing-sm) var(--spacing-md);
+      border-radius: var(--border-radius-lg);
+      line-height: 1.4;
+      word-break: break-word;
+      animation: messageSlideIn 0.3s ease;
+    }
+
+    .message.user .message-content {
+      background-color: var(--bg-chat-user);
+      border-bottom-right-radius: var(--border-radius-sm);
+    }
+
+    .message.bot .message-content {
+      background-color: var(--bg-chat-bot);
+      border-bottom-left-radius: var(--border-radius-sm);
+    }
+
+    .message-time {
+      font-size: var(--font-size-xs);
+      color: var(--text-muted);
+      margin-top: var(--spacing-xs);
+    }
+
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      padding: var(--spacing-sm) var(--spacing-md);
+      background-color: var(--bg-chat-bot);
+      border-radius: var(--border-radius-lg);
+      border-bottom-left-radius: var(--border-radius-sm);
+      margin: var(--spacing-md) 0;
+      max-width: 80px;
+    }
+
+    .typing-dots {
+      display: flex;
+      gap: 4px;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--text-muted);
+      animation: typingDot 1.4s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes typingDot {
+      0%, 80%, 100% {
+        transform: scale(0);
+        opacity: 0.5;
+      }
+      40% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* Login prompt styles */
+    .login-prompt {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: var(--spacing-md);
+      border-radius: var(--border-radius);
+      margin-bottom: var(--spacing-md);
+      text-align: center;
+    }
+
+    .login-prompt a {
+      color: white;
+      text-decoration: underline;
+      font-weight: 600;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .chat-page-container {
+        padding: 0;
+      }
+      
+      .chat-container {
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="chat-page-container">
+  <div class="chat-container">
+    <div class="chat-header">
+      <div class="d-flex align-items-center">
+        <button id="sidebarToggle" class="btn btn-sm btn-outline-light me-3">
+          ☰
+        </button>
+        <span>🤖 Dịch Ngôn Ngữ AI</span>
+      </div>
+      <div class="d-flex align-items-center">
+        <a href="login.php" class="btn btn-sm btn-outline-light">
+          🔑 Đăng nhập
+        </a>
+      </div>
+    </div>
+
+    <div id="chatBody" class="chat-body">
+      <div class="login-prompt">
+        <h4>💬 Chào mừng đến với AI Chat!</h4>
+        <p>🔐 <strong>Đăng nhập</strong> để lưu lịch sử cuộc trò chuyện và sử dụng sidebar</p>
+        <p>Hoặc tiếp tục chat mà không cần đăng nhập (không lưu lịch sử)</p>
+        <div class="mt-3">
+          <a href="login.php" class="btn btn-sm btn-light me-2">🔑 Đăng nhập</a>
+          <a href="register.php" class="btn btn-sm btn-outline-light">📝 Đăng ký</a>
+        </div>
+      </div>
+      
+      <div class="text-center text-muted p-4">
+        <h4>🎉 Bắt đầu cuộc trò chuyện!</h4>
+        <p>Bạn có thể:</p>
+        <ul class="list-unstyled">
+          <li>💬 Trò chuyện với AI</li>
+          <li>🌍 Dịch ngôn ngữ</li>
+          <li>❓ Đặt câu hỏi bất kỳ</li>
+          <li>📚 Học hỏi kiến thức mới</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="chat-input">
+      <input type="text" id="messageInput" class="form-control" 
+             placeholder="Nhập tin nhắn của bạn..." 
+             onkeypress="handleKeyPress(event)">
+      <button onclick="sendMessage()" class="btn btn-primary btn-round" id="sendButton">
+        <span id="sendButtonText">Gửi</span>
+        <span id="sendButtonLoader" class="d-none">⏳</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Chat History Sidebar -->
+<div class="sidebar" id="chatSidebar">
+  <div class="sidebar-header">
+    <h4 class="mb-0">💬 Lịch sử Chat</h4>
+    <button class="btn btn-sm btn-primary" onclick="showLoginPrompt()">
+      🔑 Đăng nhập
+    </button>
+  </div>
+  <div class="sidebar-body">
+    <div id="conversationsList">
+      <div class="text-center p-3">
+        <div class="login-prompt mb-3">
+          <p class="mb-2">🔐 <strong>Cần đăng nhập</strong></p>
+          <p class="text-sm">Đăng nhập để lưu và quản lý lịch sử cuộc trò chuyện</p>
+        </div>
+        <a href="login.php" class="btn btn-sm btn-primary me-2">🔑 Đăng nhập</a>
+        <a href="register.php" class="btn btn-sm btn-outline-primary">📝 Đăng ký</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<script>
+// Chat functionality
+let isLoggedIn = false; // Since this is HTML, user is not logged in
+
+function handleKeyPress(event) {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
+  }
+}
+
+async function sendMessage() {
+  const input = document.getElementById('messageInput');
+  const text = input.value.trim();
+  
+  if (!text) return;
+  
+  // Disable input and show loading
+  setLoading(true);
+  input.value = '';
+  
+  // Add user message to chat
+  addMessage(text, 'user');
+  
+  // Show typing indicator
+  showTypingIndicator();
+  
+  try {
+    // Send to AI
+    const response = await fetch('gemini_translate.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'message=' + encodeURIComponent(text)
+    });
+    
+    const data = await response.json();
+    const aiResponse = data.response || 'Xin lỗi, tôi không thể phản hồi lúc này.';
+    
+    // Remove typing indicator
+    hideTypingIndicator();
+    
+    // Add AI response
+    addMessage(aiResponse, 'bot');
+    
+  } catch (error) {
+    console.error('Error sending message:', error);
+    hideTypingIndicator();
+    addMessage('❌ Lỗi kết nối. Vui lòng thử lại.', 'bot');
+  } finally {
+    setLoading(false);
+  }
+}
+
+function addMessage(text, sender) {
+  const chatBody = document.getElementById('chatBody');
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `message ${sender}`;
+  
+  const time = new Date().toLocaleTimeString('vi-VN', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+  
+  messageDiv.innerHTML = `
+    <div class="message-content">
+      ${escapeHtml(text)}
+      <div class="message-time">${time}</div>
+    </div>
+  `;
+  
+  chatBody.appendChild(messageDiv);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+function showTypingIndicator() {
+  const chatBody = document.getElementById('chatBody');
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'message bot';
+  typingDiv.id = 'typingIndicator';
+  typingDiv.innerHTML = `
+    <div class="typing-indicator">
+      <div class="typing-dots">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+  `;
+  
+  chatBody.appendChild(typingDiv);
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+
+function hideTypingIndicator() {
+  const typingIndicator = document.getElementById('typingIndicator');
+  if (typingIndicator) {
+    typingIndicator.remove();
+  }
+}
+
+function setLoading(loading) {
+  const input = document.getElementById('messageInput');
+  const button = document.getElementById('sendButton');
+  const buttonText = document.getElementById('sendButtonText');
+  const buttonLoader = document.getElementById('sendButtonLoader');
+  
+  input.disabled = loading;
+  button.disabled = loading;
+  
+  if (loading) {
+    buttonText.classList.add('d-none');
+    buttonLoader.classList.remove('d-none');
+  } else {
+    buttonText.classList.remove('d-none');
+    buttonLoader.classList.add('d-none');
+    input.focus();
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function showLoginPrompt() {
+  alert('Vui lòng đăng nhập để sử dụng tính năng lưu lịch sử cuộc trò chuyện!\n\nClick "🔑 Đăng nhập" để chuyển đến trang đăng nhập.');
+}
+
+// Sidebar functionality
+function toggleSidebar() {
+  const sidebar = document.getElementById('chatSidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  const isOpen = sidebar.classList.contains('active');
+  
+  if (isOpen) {
+    closeSidebar();
+  } else {
+    openSidebar();
+  }
+}
+
+function openSidebar() {
+  const sidebar = document.getElementById('chatSidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  
+  sidebar.classList.add('active');
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSidebar() {
+  const sidebar = document.getElementById('chatSidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  
+  sidebar.classList.remove('active');
+  overlay.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Sidebar toggle
+  document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+  document.getElementById('sidebarOverlay').addEventListener('click', closeSidebar);
+  
+  // Focus message input
+  document.getElementById('messageInput').focus();
+  
+  // ESC key to close sidebar
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeSidebar();
+    }
+  });
+});
+
+// Make functions available globally
+window.sendMessage = sendMessage;
+window.toggleSidebar = toggleSidebar;
+window.showLoginPrompt = showLoginPrompt;
+</script>
+
+</body>
+</html>

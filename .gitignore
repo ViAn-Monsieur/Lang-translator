@@ -1,0 +1,35 @@
+# ✅ PHP
+*.log
+*.sql
+*.sqlite
+*.bak
+
+# ✅ IDE / Hệ thống
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ✅ Composer / Vendor (nếu có dùng)
+vendor/
+
+# ✅ Node (nếu có dùng js build)
+node_modules/
+dist/
+
+# ✅ Bảo vệ file nhạy cảm
+config.php
+.env
+
+# ✅ Backup và cache
+*.zip
+*.rar
+*.tar
+*.gz
+*.tmp
+*.cache
+.DS_Store
+Thumbs.db
+
+# ✅ Upload riêng tư (nếu có)
+uploads/
